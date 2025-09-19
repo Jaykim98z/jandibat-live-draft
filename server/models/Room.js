@@ -52,7 +52,7 @@ const RoomSchema = new mongoose.Schema({
       default: 'shuffle' 
     },
     timePerTurn: { type: Number, default: 30, min: 10, max: 180 },
-    maxParticipants: { type: Number, default: 6, min: 2, max: 8 }
+    maxParticipants: { type: Number, default: 6, min: 2, max: 100 }
   },
   participants: [ParticipantSchema],
   playerPool: [PlayerSchema],

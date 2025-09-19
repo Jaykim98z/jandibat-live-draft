@@ -1,0 +1,47 @@
+.container {
+  max-width: 72rem;
+  margin: 0 auto;
+}
+
+.card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  padding: 2rem;
+}
+
+.title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  color: var(--primary-600);
+}
+
+.description {
+  color: var(--gray-600);
+  margin-bottom: 2rem;
+}
+
+.comingSoon {
+  margin-top: 2rem;
+  padding: 1rem;
+  background-color: #fefce8;
+  border: 1px solid #eab308;
+  border-radius: 8px;
+}
+
+.comingSoonTitle {
+  font-weight: 600;
+  color: #92400e;
+  margin-bottom: 0.5rem;
+}
+
+.featureList {
+  list-style: disc;
+  margin-left: 1.25rem;
+  color: #92400e;
+}
+
+.featureItem {
+  margin-bottom: 0.25rem;
+}

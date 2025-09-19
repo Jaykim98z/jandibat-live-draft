@@ -188,6 +188,7 @@ const joinRoom = async (req, res) => {
           id: room._id,
           code: room.code,
           title: room.title,
+          host: room.host,
           participants: room.participants,
           participantCount: room.participants.length
         },
@@ -221,6 +222,7 @@ const joinRoom = async (req, res) => {
         id: room._id,
         code: room.code,
         title: room.title,
+        host: room.host,
         participants: room.participants,
         participantCount: room.participants.length
       },
