@@ -1,0 +1,94 @@
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 500;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  position: relative;
+  overflow: hidden;
+  gap: 0.5rem;
+}
+
+.button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.button:active {
+  transform: translateY(0);
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.button:disabled:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+/* 크기 */
+.sm {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+}
+
+.md {
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+}
+
+.lg {
+  padding: 1rem 1.5rem;
+  font-size: 1.125rem;
+}
+
+/* 변형 */
+.primary {
+  background-color: var(--primary-600);
+  color: white;
+}
+
+.primary:hover:not(:disabled) {
+  background-color: var(--primary-700);
+}
+
+.outline {
+  background-color: transparent;
+  border: 2px solid var(--primary-600);
+  color: var(--primary-600);
+}
+
+.outline:hover:not(:disabled) {
+  background-color: var(--primary-600);
+  color: white;
+}
+
+.secondary {
+  background-color: var(--gray-600);
+  color: white;
+}
+
+.secondary:hover:not(:disabled) {
+  background-color: var(--gray-700);
+}
+
+.danger {
+  background-color: #ef4444;
+  color: white;
+}
+
+.danger:hover:not(:disabled) {
+  background-color: #dc2626;
+}
+
+.loading {
+  pointer-events: none;
+}
