@@ -1,5 +1,5 @@
 // server/server.js
-const { server } = require('./app');
+const { server, connectDB } = require('./app');
 
 const PORT = process.env.PORT || 3000;
 
@@ -34,14 +34,27 @@ process.on('uncaughtException', (error) => {
 });
 
 // 서버 시작
-server.listen(PORT, () => {
-  console.log('🚀================================🚀');
-  console.log('🎯 JandiBat Live Draft Server');
-  console.log(`📡 포트: ${PORT}`);
-  console.log(`🌍 환경: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`⏰ 시작 시간: ${new Date().toISOString()}`);
-  console.log('🚀================================🚀');
-  console.log(`🔗 서버 주소: http://localhost:${PORT}`);
-  console.log(`❤️  헬스체크: http://localhost:${PORT}/health`);
-  console.log(`📊 API: http://localhost:${PORT}/api`);
-});
+const startServer = async () => {
+  try {
+    // MongoDB 연결
+    await connectDB();
+    
+    // 서버 시작
+    server.listen(PORT, () => {
+      console.log('🚀================================🚀');
+      console.log('🎯 JandiBat Live Draft Server');
+      console.log(`📡 포트: ${PORT}`);
+      console.log(`🌍 환경: ${process.env.NODE_ENV || 'development'}`);
+      console.log(`⏰ 시작 시간: ${new Date().toISOString()}`);
+      console.log('🚀================================🚀');
+      console.log(`🔗 서버 주소: http://localhost:${PORT}`);
+      console.log(`❤️  헬스체크: http://localhost:${PORT}/health`);
+      console.log(`📊 API: http://localhost:${PORT}/api`);
+    });
+  } catch (error) {
+    console.error('❌ 서버 시작 실패:', error);
+    process.exit(1);
+  }
+};
+
+startServer();
