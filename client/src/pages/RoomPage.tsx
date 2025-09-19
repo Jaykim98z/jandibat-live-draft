@@ -274,7 +274,12 @@ const RoomPage: React.FC = () => {
                       <span className={styles.youBadge}>(나)</span>
                     )}
                   </p>
-                  <p className={styles.participantId}>@{participant.soopId || 'unknown'}</p>
+                  <p className={styles.participantId}>
+                    @{participant.soopId || 'unknown'} 
+                    <span className={styles.positionBadge}>
+                      {participant.position || 'ST'}
+                    </span>
+                  </p>
                 </div>
                 
                 <div className={styles.participantStatus}>

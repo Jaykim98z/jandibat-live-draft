@@ -230,6 +230,19 @@
   color: var(--text-secondary);
   margin: 0;
   font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.positionBadge {
+  background: var(--primary-600);
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.125rem 0.5rem;
+  border-radius: 10px;
+  text-transform: uppercase;
 }
 
 .participantStatus {

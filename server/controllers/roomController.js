@@ -1,4 +1,4 @@
-// server/controllers/roomController.js
+// server/controllers/roomController.js (포지션 추가된 버전)
 const { Room } = require('../models');
 
 // 방 코드 생성 함수
@@ -17,10 +17,19 @@ const createRoom = async (req, res) => {
     const { title, settings, host } = req.body;
 
     // 입력 검증
-    if (!title || !host || !host.soopId || !host.nickname) {
+    if (!title || !host || !host.soopId || !host.nickname || !host.position) {
       return res.status(400).json({
-        error: '방 제목과 호스트 정보가 필요합니다.',
-        required: ['title', 'host.soopId', 'host.nickname']
+        error: '방 제목, 호스트 정보, 포지션이 필요합니다.',
+        required: ['title', 'host.soopId', 'host.nickname', 'host.position']
+      });
+    }
+
+    // 포지션 유효성 검사
+    const validPositions = ['ST', 'WF', 'CM', 'CDM', 'FB', 'CB', 'GK'];
+    if (!validPositions.includes(host.position)) {
+      return res.status(400).json({
+        error: '올바른 포지션을 선택해주세요.',
+        validPositions
       });
     }
 
@@ -43,19 +52,20 @@ const createRoom = async (req, res) => {
         userId,
         soopId: host.soopId,
         nickname: host.nickname,
-        profileImage: host.profileImage || ''
+        profileImage: host.profileImage || '',
+        position: host.position
       },
       settings: {
         password: settings?.password || null,
         draftType: settings?.draftType || 'shuffle',
-        timePerTurn: settings?.timePerTurn || 30,
-        maxParticipants: settings?.maxParticipants || 6
+        maxParticipants: 100 // 100명 고정
       },
       participants: [{
         userId,
         soopId: host.soopId,
         nickname: host.nickname,
         profileImage: host.profileImage || '',
+        position: host.position,
         isHost: true,
         isReady: true
       }]
@@ -63,7 +73,7 @@ const createRoom = async (req, res) => {
 
     await room.save();
 
-    console.log(`🏠 새 방 생성: ${roomCode} - ${title}`);
+    console.log(`🏠 새 방 생성: ${roomCode} - ${title} (방장: ${host.nickname}/${host.position})`);
 
     res.status(201).json({
       success: true,
@@ -149,10 +159,19 @@ const joinRoom = async (req, res) => {
     const { user, password } = req.body;
 
     // 입력 검증
-    if (!user || !user.soopId || !user.nickname) {
+    if (!user || !user.soopId || !user.nickname || !user.position) {
       return res.status(400).json({
-        error: '사용자 정보가 필요합니다.',
-        required: ['user.soopId', 'user.nickname']
+        error: '사용자 정보와 포지션이 필요합니다.',
+        required: ['user.soopId', 'user.nickname', 'user.position']
+      });
+    }
+
+    // 포지션 유효성 검사
+    const validPositions = ['ST', 'WF', 'CM', 'CDM', 'FB', 'CB', 'GK'];
+    if (!validPositions.includes(user.position)) {
+      return res.status(400).json({
+        error: '올바른 포지션을 선택해주세요.',
+        validPositions
       });
     }
 
@@ -171,10 +190,10 @@ const joinRoom = async (req, res) => {
       });
     }
 
-    // 방이 가득 찼는지 확인
+    // 방이 가득 찼는지 확인 (100명 제한)
     if (room.participants.length >= room.settings.maxParticipants) {
       return res.status(400).json({
-        error: '방이 가득 찼습니다.'
+        error: '방이 가득 찼습니다. (최대 100명)'
       });
     }
 
@@ -207,13 +226,14 @@ const joinRoom = async (req, res) => {
       soopId: user.soopId,
       nickname: user.nickname,
       profileImage: user.profileImage || '',
+      position: user.position,
       isHost: false,
       isReady: false
     });
 
     await room.save();
 
-    console.log(`👥 방 입장: ${user.nickname} → ${room.code}`);
+    console.log(`👥 방 입장: ${user.nickname}(${user.position}) → ${room.code}`);
 
     res.json({
       success: true,
@@ -257,7 +277,7 @@ const getActiveRooms = async (req, res) => {
       rooms: rooms.map(room => ({
         code: room.code,
         title: room.title,
-        host: room.host.nickname,
+        host: `${room.host.nickname}(${room.host.position})`,
         participants: room.participants?.length || 0,
         status: room.status,
         createdAt: room.createdAt

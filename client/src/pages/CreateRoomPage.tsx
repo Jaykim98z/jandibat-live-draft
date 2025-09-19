@@ -1,4 +1,4 @@
-// client/src/pages/CreateRoomPage.tsx (수정된 버전)
+// client/src/pages/CreateRoomPage.tsx (간소화된 버전)
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -12,10 +12,9 @@ import styles from './CreateRoomPage.module.css';
 interface CreateRoomForm {
   title: string;
   hostSoopId: string;
+  hostPosition: 'ST' | 'WF' | 'CM' | 'CDM' | 'FB' | 'CB' | 'GK';
   password?: string;
   draftType: 'shuffle' | 'snake' | 'manual';
-  timePerTurn: number;
-  maxParticipants: number;
 }
 
 const CreateRoomPage: React.FC = () => {
@@ -31,8 +30,7 @@ const CreateRoomPage: React.FC = () => {
   } = useForm<CreateRoomForm>({
     defaultValues: {
       draftType: 'shuffle',
-      timePerTurn: 30,
-      maxParticipants: 6
+      hostPosition: 'ST'
     }
   });
 
@@ -62,26 +60,23 @@ const CreateRoomPage: React.FC = () => {
     setIsLoading(true);
     
     try {
-      // 방 생성 API 호출
       const response = await RoomService.createRoom({
         title: data.title.trim(),
         host: {
           soopId: data.hostSoopId.trim(),
           nickname: profile.nickname,
-          profileImage: profile.profileImage
+          profileImage: profile.profileImage,
+          position: data.hostPosition
         },
         settings: {
           password: data.password?.trim() || undefined,
-          draftType: data.draftType,
-          timePerTurn: data.timePerTurn,
-          maxParticipants: data.maxParticipants
+          draftType: data.draftType
         }
       });
 
       if (response.success) {
         toast.success(`방이 생성되었습니다! 방 코드: ${response.room.code}`);
         
-        // 사용자 데이터와 함께 방 페이지로 이동
         navigate(`/room/${response.room.code}`, {
           state: {
             userData: {
@@ -89,6 +84,7 @@ const CreateRoomPage: React.FC = () => {
               soopId: data.hostSoopId.trim(),
               nickname: profile.nickname,
               profileImage: profile.profileImage,
+              position: data.hostPosition,
               isHost: response.userInfo.isHost
             },
             roomCode: response.room.code
@@ -177,12 +173,32 @@ const CreateRoomPage: React.FC = () => {
             )}
           </div>
 
+          {/* 포지션 선택 */}
+          <div className={styles.formGroup}>
+            <label className={styles.label}>
+              <i className="fas fa-tshirt mr-2"></i>
+              본인의 포지션
+            </label>
+            <select
+              {...register('hostPosition')}
+              className={styles.select}
+            >
+              <option value="ST">ST (스트라이커)</option>
+              <option value="WF">WF (윙포워드)</option>
+              <option value="CM">CM (센터미드필더)</option>
+              <option value="CDM">CDM (수비형미드필더)</option>
+              <option value="FB">FB (풀백)</option>
+              <option value="CB">CB (센터백)</option>
+              <option value="GK">GK (골키퍼)</option>
+            </select>
+          </div>
+
           {/* SOOP 프로필 미리보기 */}
           {profile && (
             <div className={styles.profilePreview}>
               <div className={styles.profileHeader}>
-                <i className="fas fa-check-circle text-green-500 text-sm"></i>
-                <span className="text-sm text-green-700">프로필 확인됨</span>
+                <i className="fas fa-check-circle text-green-500 mr-2"></i>
+                프로필 확인됨
               </div>
               <div className={styles.profileContent}>
                 <img 
@@ -218,7 +234,7 @@ const CreateRoomPage: React.FC = () => {
                 />
                 <div className={styles.radioContent}>
                   <span className={styles.radioTitle}>셔플픽 🌟</span>
-                  <span className={styles.radioDescription}>공정한 순서 보장 (3인 이상 추천)</span>
+                  <span className={styles.radioDescription}>공정한 순서 보장 (추천)</span>
                 </div>
               </label>
 
@@ -247,45 +263,6 @@ const CreateRoomPage: React.FC = () => {
                   <span className={styles.radioDescription}>방장이 직접 순서 설정</span>
                 </div>
               </label>
-            </div>
-          </div>
-
-          {/* 시간 설정 */}
-          <div className={styles.formRow}>
-            <div className={styles.formGroup}>
-              <label className={styles.label}>
-                <i className="fas fa-clock mr-2"></i>
-                턴당 시간
-              </label>
-              <select
-                {...register('timePerTurn', { valueAsNumber: true })}
-                className={styles.select}
-              >
-                <option value={15}>15초</option>
-                <option value={30}>30초</option>
-                <option value={60}>1분</option>
-                <option value={120}>2분</option>
-                <option value={180}>3분</option>
-              </select>
-            </div>
-
-            <div className={styles.formGroup}>
-              <label className={styles.label}>
-                <i className="fas fa-users mr-2"></i>
-                최대 참가자
-              </label>
-              <select
-                {...register('maxParticipants', { valueAsNumber: true })}
-                className={styles.select}
-              >
-                <option value={2}>2명</option>
-                <option value={3}>3명</option>
-                <option value={4}>4명</option>
-                <option value={5}>5명</option>
-                <option value={6}>6명</option>
-                <option value={8}>8명</option>
-                <option value={10}>10명</option>
-              </select>
             </div>
           </div>
 
@@ -339,6 +316,25 @@ const CreateRoomPage: React.FC = () => {
             </Button>
           </div>
         </form>
+
+        {/* 설정 안내 */}
+        <div className={styles.infoSection}>
+          <h3 className={styles.infoTitle}>
+            <i className="fas fa-info-circle mr-2"></i>
+            방 설정 안내
+          </h3>
+          <div className={styles.infoContent}>
+            <div className={styles.infoItem}>
+              <strong>최대 참가자:</strong> 100명까지 자동으로 입장 가능
+            </div>
+            <div className={styles.infoItem}>
+              <strong>드래프트 방식:</strong> 공정한 선수 선택을 위한 알고리즘
+            </div>
+            <div className={styles.infoItem}>
+              <strong>포지션:</strong> 드래프트에서 본인의 선호 포지션
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

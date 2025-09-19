@@ -8,16 +8,15 @@ export interface UserData {
   soopId: string;
   nickname: string;
   profileImage: string;
+  position: 'ST' | 'WF' | 'CM' | 'CDM' | 'FB' | 'CB' | 'GK'; // 포지션 추가
 }
 
 export interface RoomCreateData {
   title: string;
-  host: UserData;
+  host: UserData; // UserData가 이미 position을 포함하므로 그대로 사용
   settings?: {
     password?: string;
     draftType?: 'shuffle' | 'snake' | 'manual';
-    timePerTurn?: number;
-    maxParticipants?: number;
   };
 }
 

@@ -1,4 +1,4 @@
-// server/models/Room.js
+// server/models/Room.js (수정된 버전)
 const mongoose = require('mongoose');
 
 const ParticipantSchema = new mongoose.Schema({
@@ -6,6 +6,7 @@ const ParticipantSchema = new mongoose.Schema({
   soopId: { type: String, required: true },
   nickname: { type: String, required: true },
   profileImage: { type: String, default: '' },
+  position: { type: String, required: true }, // 포지션 필수로 변경
   joinedAt: { type: Date, default: Date.now },
   isHost: { type: Boolean, default: false },
   isReady: { type: Boolean, default: false },
@@ -42,7 +43,8 @@ const RoomSchema = new mongoose.Schema({
     userId: { type: String, required: true },
     soopId: { type: String, required: true },
     nickname: { type: String, required: true },
-    profileImage: { type: String, default: '' }
+    profileImage: { type: String, default: '' },
+    position: { type: String, required: true } // 방장도 포지션 필수
   },
   settings: {
     password: { type: String, default: null },
@@ -51,8 +53,8 @@ const RoomSchema = new mongoose.Schema({
       enum: ['shuffle', 'snake', 'manual'], 
       default: 'shuffle' 
     },
-    timePerTurn: { type: Number, default: 30, min: 10, max: 180 },
-    maxParticipants: { type: Number, default: 6, min: 2, max: 100 }
+    // timePerTurn과 maxParticipants 제거 또는 고정값으로 변경
+    maxParticipants: { type: Number, default: 100, max: 100 } // 100명 고정
   },
   participants: [ParticipantSchema],
   playerPool: [PlayerSchema],
@@ -61,6 +63,7 @@ const RoomSchema = new mongoose.Schema({
     soopId: String,
     nickname: String,
     profileImage: String,
+    position: String, // 감독도 포지션 있음
     assignedAt: { type: Date, default: Date.now }
   }],
   status: { 

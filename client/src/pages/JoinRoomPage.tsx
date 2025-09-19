@@ -12,6 +12,7 @@ import styles from './JoinRoomPage.module.css';
 interface JoinRoomForm {
   roomCode: string;
   soopId: string;
+  position: 'ST' | 'WF' | 'CM' | 'CDM' | 'FB' | 'CB' | 'GK';
   password?: string;
 }
 
@@ -27,7 +28,11 @@ const JoinRoomPage: React.FC = () => {
     watch,
     setValue,
     formState: { errors }
-  } = useForm<JoinRoomForm>();
+  } = useForm<JoinRoomForm>({
+    defaultValues: {
+      position: 'ST'
+    }
+  });
 
   const watchedSoopId = watch('soopId');
   const watchedRoomCode = watch('roomCode');
@@ -89,13 +94,13 @@ const JoinRoomPage: React.FC = () => {
     setIsLoading(true);
     
     try {
-      // 방 입장 API 호출
       const response = await RoomService.joinRoom(
         data.roomCode.trim().toUpperCase(),
         {
           soopId: data.soopId.trim(),
           nickname: soopProfile.nickname,
-          profileImage: soopProfile.profileImage
+          profileImage: soopProfile.profileImage,
+          position: data.position
         },
         data.password?.trim()
       );
@@ -103,7 +108,6 @@ const JoinRoomPage: React.FC = () => {
       if (response.success) {
         toast.success('방에 성공적으로 입장했습니다!');
         
-        // 사용자 데이터와 함께 방 페이지로 이동
         navigate(`/room/${response.room.code}`, {
           state: {
             userData: {
@@ -111,6 +115,7 @@ const JoinRoomPage: React.FC = () => {
               soopId: data.soopId.trim(),
               nickname: soopProfile.nickname,
               profileImage: soopProfile.profileImage,
+              position: data.position,
               isHost: response.userInfo.isHost
             },
             roomCode: response.room.code
@@ -199,6 +204,29 @@ const JoinRoomPage: React.FC = () => {
             )}
             <p className={styles.helpText}>
               아프리카TV/SOOP에서 사용하는 본인의 ID를 입력하세요
+            </p>
+          </div>
+
+          {/* 포지션 선택 */}
+          <div className={styles.formGroup}>
+            <label className={styles.label}>
+              <i className="fas fa-tshirt mr-2"></i>
+              본인의 포지션
+            </label>
+            <select
+              {...register('position')}
+              className={styles.select}
+            >
+              <option value="ST">ST (스트라이커)</option>
+              <option value="WF">WF (윙포워드)</option>
+              <option value="CM">CM (센터미드필더)</option>
+              <option value="CDM">CDM (수비형미드필더)</option>
+              <option value="FB">FB (풀백)</option>
+              <option value="CB">CB (센터백)</option>
+              <option value="GK">GK (골키퍼)</option>
+            </select>
+            <p className={styles.helpText}>
+              드래프트에서 사용할 본인의 선호 포지션을 선택하세요
             </p>
           </div>
 
@@ -297,6 +325,13 @@ const JoinRoomPage: React.FC = () => {
               <div>
                 <strong>SOOP ID 확인</strong>
                 <p>입력한 ID가 올바르면 프로필 정보가 자동으로 표시됩니다.</p>
+              </div>
+            </div>
+            <div className={styles.helpItem}>
+              <i className="fas fa-tshirt"></i>
+              <div>
+                <strong>포지션 선택</strong>
+                <p>드래프트에서 본인이 선호하는 포지션을 선택하세요. 나중에 변경 가능합니다.</p>
               </div>
             </div>
             <div className={styles.helpItem}>

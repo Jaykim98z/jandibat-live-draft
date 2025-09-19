@@ -1,26 +1,50 @@
-
 /* client/src/pages/JoinRoomPage.module.css */
+
 .container {
-  max-width: 24rem;
-  margin: 0 auto;
+  min-height: 100vh;
+  background: linear-gradient(135deg, var(--background-color) 0%, #f0f5f0 100%);
+  padding: 2rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .card {
   background: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--gray-200);
+  overflow: hidden;
+  max-width: 600px; /* 가로 길이 늘림 */
+  width: 100%;
+}
+
+.header {
+  background: linear-gradient(135deg, var(--primary-600) 0%, var(--primary-700) 100%);
+  color: white;
   padding: 2rem;
+  text-align: center;
 }
 
 .title {
-  font-size: 1.875rem;
+  font-size: 1.75rem;
   font-weight: 700;
-  text-align: center;
-  margin-bottom: 2rem;
-  color: var(--primary-600);
+  margin: 0 0 0.5rem 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.subtitle {
+  font-size: 1rem;
+  opacity: 0.9;
+  margin: 0;
+  font-weight: 400;
 }
 
 .form {
+  padding: 2rem;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
@@ -29,59 +53,241 @@
 .formGroup {
   display: flex;
   flex-direction: column;
+  gap: 0.5rem;
 }
 
 .label {
+  font-weight: 600;
+  color: var(--gray-700);
+  font-size: 0.9rem;
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-weight: 500;
-  margin-bottom: 0.5rem;
-  color: var(--gray-700);
-  font-size: 0.875rem;
 }
 
-.input {
+.label i {
+  color: var(--primary-600);
+  width: 16px;
+}
+
+.inputWrapper {
+  position: relative;
+}
+
+.input,
+.select {
   width: 100%;
-  padding: 0.75rem;
-  border: 1px solid var(--gray-300);
-  border-radius: 8px;
+  padding: 0.875rem 1rem;
+  border: 2px solid var(--gray-200);
+  border-radius: 10px;
   font-size: 1rem;
+  background: var(--gray-50);
   transition: all 0.2s ease;
   font-family: inherit;
 }
 
-.input:focus {
+.input:focus,
+.select:focus {
   outline: none;
   border-color: var(--primary-600);
+  background: white;
   box-shadow: 0 0 0 3px rgba(15, 51, 39, 0.1);
 }
 
-.roomCodeInput {
-  text-align: center;
-  font-size: 1.125rem;
-  font-family: 'Monaco', 'Menlo', monospace;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  padding: 1rem;
+.input.error {
+  border-color: #ef4444;
+  background: #fef2f2;
 }
 
-.error {
+.loadingIcon {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.errorMessage {
   color: #ef4444;
   font-size: 0.875rem;
-  margin-top: 0.25rem;
+  margin: 0;
+  font-weight: 500;
+}
+
+.helpText {
+  color: var(--gray-600);
+  font-size: 0.8125rem;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* 프로필 미리보기 - 깔끔하게 개선 */
+.profilePreview {
+  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+  border: 2px solid #10b981;
+  border-radius: 12px;
+  padding: 1rem;
+  margin-top: 0.5rem;
+}
+
+.profileHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #047857;
+}
+
+.profileContent {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: white;
+  border-radius: 8px;
+  padding: 0.75rem;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.profileImage {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #10b981;
+  background: var(--gray-100);
+}
+
+.profileInfo {
+  flex: 1;
+}
+
+.profileNickname {
+  font-weight: 600;
+  color: var(--gray-800);
+  margin: 0 0 0.25rem 0;
+  font-size: 1rem;
+}
+
+.profileId {
+  color: var(--gray-600);
+  margin: 0;
+  font-size: 0.875rem;
 }
 
 .buttonGroup {
   display: flex;
-  gap: 1rem;
-  padding-top: 1rem;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1rem;
 }
 
-.button {
-  flex: 1;
+/* 도움말 섹션 */
+.helpSection {
+  background: var(--gray-50);
+  padding: 1.5rem 2rem 2rem;
+  border-top: 1px solid var(--gray-200);
+}
+
+.helpTitle {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--gray-800);
+  margin: 0 0 1rem 0;
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 0.5rem;
+}
+
+.helpTitle i {
+  color: var(--primary-600);
+}
+
+.helpContent {
+  display: grid;
+  gap: 1rem;
+}
+
+.helpItem {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.helpItem i {
+  color: var(--primary-600);
+  margin-top: 0.125rem;
+  flex-shrink: 0;
+}
+
+.helpItem strong {
+  display: block;
+  color: var(--gray-800);
+  margin-bottom: 0.25rem;
+  font-size: 0.875rem;
+}
+
+.helpItem p {
+  color: var(--gray-600);
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+  .container {
+    padding: 1rem 0.5rem;
+  }
+  
+  .card {
+    border-radius: 12px;
+    max-width: none;
+    margin: 0;
+  }
+  
+  .header {
+    padding: 1.5rem 1rem;
+  }
+  
+  .title {
+    font-size: 1.5rem;
+  }
+  
+  .form {
+    padding: 1.5rem 1rem;
+    gap: 1.25rem;
+  }
+  
+  .helpSection {
+    padding: 1.25rem 1rem 1.5rem;
+  }
+  
+  .profileContent {
+    flex-direction: column;
+    text-align: center;
+    gap: 0.75rem;
+  }
+  
+  .buttonGroup {
+    gap: 0.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 0.5rem;
+  }
+  
+  .card {
+    border-radius: 8px;
+  }
+  
+  .form {
+    padding: 1rem;
+  }
+  
+  .helpSection {
+    padding: 1rem;
+  }
 }

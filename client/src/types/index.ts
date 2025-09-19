@@ -6,6 +6,7 @@ export interface User {
   soopId: string;
   nickname: string;
   profileImage: string;
+  position: 'ST' | 'WF' | 'CM' | 'CDM' | 'FB' | 'CB' | 'GK'; // 포지션 필수
   isHost?: boolean;
   isReady?: boolean;
   isManager?: boolean;
@@ -16,8 +17,7 @@ export interface User {
 export interface RoomSettings {
   password?: string | null;
   draftType: 'shuffle' | 'snake' | 'manual';
-  timePerTurn: number;
-  maxParticipants: number;
+  maxParticipants: number; // 100으로 고정
 }
 
 // 방 정보
@@ -107,6 +107,7 @@ export interface SoopMultipleResponse extends ApiResponse<SoopProfile[]> {
 export interface CreateRoomForm {
   title: string;
   hostSoopId: string;
+  hostPosition: 'ST' | 'WF' | 'CM' | 'CDM' | 'FB' | 'CB' | 'GK';
   password?: string;
   draftType: 'shuffle' | 'snake' | 'manual';
 }
@@ -114,6 +115,7 @@ export interface CreateRoomForm {
 export interface JoinRoomForm {
   roomCode: string;
   soopId: string;
+  position: 'ST' | 'WF' | 'CM' | 'CDM' | 'FB' | 'CB' | 'GK';
   password?: string;
 }
 
