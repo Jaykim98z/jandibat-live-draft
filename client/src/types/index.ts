@@ -1,4 +1,4 @@
-// client/src/types/index.ts
+// client/src/types/index.ts (업데이트된 버전)
 
 // 사용자 정보
 export interface User {
@@ -54,9 +54,9 @@ export interface SoopProfile {
   soopId: string;
   nickname: string;
   profileImage: string;
-  isLive: boolean;
-  stationUrl: string;
-  lastUpdated: string;
+  isLive?: boolean;  // 선택적 속성으로 추가
+  stationUrl?: string;
+  lastUpdated?: string;
   error?: string;
 }
 
@@ -85,6 +85,12 @@ export interface RoomJoinResponse extends ApiResponse<Room> {
 
 export interface SoopProfileResponse extends ApiResponse<SoopProfile> {
   profile: SoopProfile;
+}
+
+export interface SoopValidationResponse extends ApiResponse<SoopProfile> {
+  soopId: string;
+  isValid: boolean;
+  profile: SoopProfile | null;
 }
 
 export interface SoopMultipleResponse extends ApiResponse<SoopProfile[]> {
@@ -122,6 +128,7 @@ export interface ClientToServerEvents {
   'leave-room': (data: { roomCode: string; userId: string }) => void;
   'send-chat-message': (data: { roomCode: string; message: string; userId: string }) => void;
   'ready-toggle': (data: { roomCode: string; userId: string }) => void;
+  'update-room-settings': (data: { roomCode: string; settings: any; userId: string }) => void;
 }
 
 export interface ServerToClientEvents {
@@ -131,6 +138,7 @@ export interface ServerToClientEvents {
   'chat-message': (data: { userId: string; nickname: string; message: string; timestamp: string }) => void;
   'error': (error: { message: string; code?: string }) => void;
   'connected': (data: { message: string; socketId: string; timestamp: string }) => void;
+  'room-joined': (data: { room: Room; userInfo: { userId: string; isHost: boolean } }) => void;
 }
 
 // 컴포넌트 Props 타입들

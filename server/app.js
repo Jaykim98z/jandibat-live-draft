@@ -1,4 +1,4 @@
-// server/app.js
+// server/app.js (업데이트된 버전)
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -9,6 +9,9 @@ require('dotenv').config();
 
 // MongoDB 연결
 const { connectDB } = require('./utils/database');
+
+// Socket 핸들러
+const RoomHandler = require('./socket/roomHandler');
 
 const app = express();
 const server = createServer(app);
@@ -43,9 +46,13 @@ app.use('/api/', limiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
+// Socket 핸들러 초기화
+const roomHandler = new RoomHandler(io);
+
 // 헬스체크 엔드포인트
 app.get('/health', async (req, res) => {
   const mongoose = require('mongoose');
+  const socketStats = roomHandler.getActiveStats();
   
   res.status(200).json({
     status: 'healthy',
@@ -57,6 +64,11 @@ app.get('/health', async (req, res) => {
     database: {
       status: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
       name: mongoose.connection.name || 'not_connected'
+    },
+    socket: {
+      activeUsers: socketStats.totalUsers,
+      activeRooms: socketStats.activeRooms,
+      roomCounts: socketStats.roomCounts
     }
   });
 });
@@ -68,6 +80,16 @@ const soopRoutes = require('./routes/soopRoutes');
 app.use('/api/rooms', roomRoutes);
 app.use('/api/soop', soopRoutes);
 
+// Socket 상태 조회 API (개발용)
+app.get('/api/socket/stats', (req, res) => {
+  const stats = roomHandler.getActiveStats();
+  res.json({
+    success: true,
+    ...stats,
+    timestamp: new Date().toISOString()
+  });
+});
+
 // 기본 API 라우트
 app.get('/api', (req, res) => {
   res.json({
@@ -77,6 +99,7 @@ app.get('/api', (req, res) => {
     endpoints: {
       health: '/health',
       api: '/api',
+      'socket-stats': '/api/socket/stats',
       rooms: '/api/rooms',
       'rooms-create': 'POST /api/rooms',
       'rooms-list': 'GET /api/rooms',
@@ -102,10 +125,8 @@ io.on('connection', (socket) => {
     timestamp: new Date().toISOString()
   });
 
-  // 연결 해제
-  socket.on('disconnect', (reason) => {
-    console.log(`🔌 사용자 연결 해제: ${socket.id} - ${reason}`);
-  });
+  // 방 관련 이벤트 핸들러 등록
+  roomHandler.handleConnection(socket);
 
   // 에러 처리
   socket.on('error', (error) => {
@@ -113,7 +134,15 @@ io.on('connection', (socket) => {
   });
 });
 
-// 404 에러 처리 (모든 정의되지 않은 라우트 처리)
+// 서버 종료 시 정리
+process.on('SIGTERM', () => {
+  console.log('👋 서버 종료 중... Socket 연결 정리');
+  io.close(() => {
+    console.log('✅ Socket.io 서버가 안전하게 종료되었습니다.');
+  });
+});
+
+// 404 에러 처리
 app.use((req, res, next) => {
   res.status(404).json({
     error: '요청한 경로를 찾을 수 없습니다.',

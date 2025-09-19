@@ -1,47 +1,430 @@
+/* client/src/pages/RoomPage.module.css */
+
 .container {
-  max-width: 72rem;
-  margin: 0 auto;
+  min-height: 100vh;
+  background: var(--background-color);
+  padding: 1rem;
 }
 
-.card {
+/* 로딩 및 에러 카드 */
+.loadingCard,
+.errorCard {
+  max-width: 500px;
+  margin: 2rem auto;
   background: white;
   border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  padding: 2rem;
+  padding: 3rem 2rem;
+  text-align: center;
+  box-shadow: var(--box-shadow);
 }
 
-.title {
+/* 연결 상태 알림 */
+.connectionAlert {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  background: #f59e0b;
+  color: white;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  z-index: 1000;
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+/* 방 헤더 */
+.roomHeader {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: var(--box-shadow);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.roomInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.roomTitle {
   font-size: 1.5rem;
   font-weight: 700;
-  margin-bottom: 1rem;
-  color: var(--primary-600);
+  color: var(--text-color);
+  margin: 0 0 0.5rem 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
 }
 
-.description {
-  color: var(--gray-600);
-  margin-bottom: 2rem;
+.roomCode {
+  background: var(--primary-100);
+  color: var(--primary-700);
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
 }
 
-.comingSoon {
-  margin-top: 2rem;
+.roomMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.roomMeta span {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.connectionStatus {
+  font-weight: 500;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8125rem;
+}
+
+.connectionStatus.connected {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.connectionStatus.disconnected {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.roomActions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+/* 방 컨텐츠 */
+.roomContent {
+  display: grid;
+  grid-template-columns: 1fr 350px;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+/* 참가자 섹션 */
+.participantsSection {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: var(--box-shadow);
+}
+
+.sectionHeader {
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid var(--gray-100);
+}
+
+.sectionHeader h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-color);
+  margin: 0;
+}
+
+.participantsList {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.participantCard {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
   padding: 1rem;
-  background-color: #fefce8;
-  border: 1px solid #eab308;
-  border-radius: 8px;
+  background: var(--gray-50);
+  border: 2px solid var(--gray-100);
+  border-radius: 12px;
+  transition: var(--transition);
+}
+
+.participantCard:hover {
+  border-color: var(--gray-200);
+  background: white;
+}
+
+.participantCard.currentUser {
+  border-color: var(--primary-200);
+  background: var(--primary-50);
+}
+
+.participantAvatar {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+}
+
+.participantAvatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.hostBadge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 20px;
+  height: 20px;
+  background: #f59e0b;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 0.6875rem;
+  border: 2px solid white;
+}
+
+.participantInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.participantName {
+  font-weight: 600;
+  color: var(--text-color);
+  margin: 0 0 0.25rem 0;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.youBadge {
+  background: var(--primary-600);
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.125rem 0.5rem;
+  border-radius: 10px;
+}
+
+.participantId {
+  color: var(--text-secondary);
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.participantStatus {
+  flex-shrink: 0;
+}
+
+.hostStatus {
+  background: #f59e0b;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+}
+
+.readyButton {
+  background: none;
+  border: 2px solid var(--gray-300);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.readyButton.ready {
+  border-color: #10b981;
+  background: #dcfce7;
+  color: #065f46;
+}
+
+.readyButton.notReady {
+  border-color: var(--gray-300);
+  background: white;
+  color: var(--gray-600);
+}
+
+.readyButton:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.readyButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* 준비 상태 요약 */
+.readySummary {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--gray-200);
+  text-align: center;
+}
+
+.readySummary p {
+  color: var(--text-secondary);
+  margin: 0;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.allReady {
+  color: #065f46;
+  font-weight: 600;
+}
+
+/* 채팅 섹션 */
+.chatSection {
+  height: 600px;
+  position: sticky;
+  top: 1rem;
+}
+
+/* 구현 예정 섹션 */
+.comingSoon {
+  grid-column: 1 / -1;
+  background: linear-gradient(135deg, var(--primary-50) 0%, var(--primary-100) 100%);
+  border: 2px dashed var(--primary-300);
+  border-radius: 12px;
+  padding: 2rem;
+  text-align: center;
+  margin-top: 1.5rem;
 }
 
 .comingSoonTitle {
+  font-size: 1.25rem;
   font-weight: 600;
-  color: #92400e;
-  margin-bottom: 0.5rem;
+  color: var(--primary-700);
+  margin: 0 0 1.5rem 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
 }
 
-.featureList {
-  list-style: disc;
-  margin-left: 1.25rem;
-  color: #92400e;
+.featureGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  max-width: 800px;
+  margin: 0 auto;
 }
 
 .featureItem {
-  margin-bottom: 0.25rem;
+  background: white;
+  padding: 1.5rem 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--primary-200);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--primary-700);
+  font-weight: 500;
+}
+
+.featureItem i {
+  font-size: 1.5rem;
+  color: var(--primary-600);
+}
+
+/* 반응형 디자인 */
+@media (max-width: 1024px) {
+  .roomContent {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .chatSection {
+    height: 400px;
+    position: static;
+  }
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 0.5rem;
+  }
+  
+  .roomHeader {
+    padding: 1rem;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .roomMeta {
+    justify-content: space-between;
+  }
+  
+  .roomActions {
+    justify-content: center;
+  }
+  
+  .participantsSection {
+    padding: 1rem;
+  }
+  
+  .participantCard {
+    padding: 0.75rem;
+  }
+  
+  .chatSection {
+    height: 300px;
+  }
+  
+  .featureGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+  
+  .featureItem {
+    padding: 1rem 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .roomTitle {
+    font-size: 1.25rem;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .roomMeta {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .featureGrid {
+    grid-template-columns: 1fr;
+  }
 }
