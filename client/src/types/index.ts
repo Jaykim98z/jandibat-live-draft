@@ -1,172 +1,140 @@
-// client/src/types/index.ts (업데이트된 버전)
+// client/src/types/index.ts (역할 시스템 타입 추가)
 
-// 사용자 정보
+export type Position = 'ST' | 'WF' | 'CM' | 'CDM' | 'FB' | 'CB' | 'GK';
+export type Role = 'manager' | 'player';
+export type RoomStatus = 'waiting' | 'role-assignment' | 'drafting' | 'completed' | 'abandoned';
+export type DraftType = 'shuffle' | 'snake' | 'manual';
+
 export interface User {
+  soopId: string;
+  nickname: string;
+  profileImage: string;
+  position: Position;
+}
+
+export interface Participant extends User {
+  userId: string;
+  role: Role; // 새로 추가
+  joinedAt: string;
+  isHost: boolean;
+  isReady: boolean;
+}
+
+export interface Manager {
   userId: string;
   soopId: string;
   nickname: string;
   profileImage: string;
-  position: 'ST' | 'WF' | 'CM' | 'CDM' | 'FB' | 'CB' | 'GK'; // 포지션 필수
-  isHost?: boolean;
-  isReady?: boolean;
-  isManager?: boolean;
-  joinedAt?: string;
+  position: Position;
+  assignedAt: string;
+  team: Player[];
 }
 
-// 방 설정
+export interface Player {
+  userId?: string; // 참가자인 경우
+  soopId: string;
+  nickname: string;
+  profileImage: string;
+  position: Position;
+  addedBy?: string;
+  isSelected: boolean;
+  selectedBy?: string;
+  selectedAt?: string;
+  pickOrder?: number;
+  round?: number;
+  pickedAt?: string;
+}
+
 export interface RoomSettings {
-  password?: string | null;
-  draftType: 'shuffle' | 'snake' | 'manual';
-  maxParticipants: number; // 100으로 고정
+  password?: string;
+  draftType: DraftType;
+  maxParticipants: number;
 }
 
-// 방 정보
 export interface Room {
   id: string;
   code: string;
   title: string;
-  host: User;
+  host: {
+    userId: string;
+    soopId: string;
+    nickname: string;
+    profileImage: string;
+    position: Position;
+  };
   settings: RoomSettings;
-  status: 'waiting' | 'drafting' | 'completed' | 'abandoned';
-  participants: User[];
-  playerPool: Player[];
-  managers: User[];
+  status: RoomStatus;
+  participants: Participant[];
   participantCount: number;
-  playerCount?: number;
+  managers: Manager[];
+  playerPool: Player[];
+  managerCount: number; // 새로 추가
+  playerCount: number;  // 새로 추가
+  canStartDraft: boolean; // 새로 추가
+  currentTurn?: string;
+  currentRound: number;
   createdAt: string;
-  updatedAt?: string;
+  updatedAt: string;
 }
 
-// 선수 정보
-export interface Player {
-  soopId: string;
+export interface UserInfo {
+  userId: string;
+  isHost: boolean;
+}
+
+export interface ChatMessage {
+  id: string;
+  userId: string;
   nickname: string;
-  profileImage: string;
-  position: 'ST' | 'WF' | 'CM' | 'CDM' | 'FB' | 'CB' | 'GK';
-  addedBy: string;
-  isSelected: boolean;
-  selectedBy?: string | null;
-  selectedAt?: string | null;
+  message: string;
+  timestamp: string;
+  type: 'user' | 'system' | 'notification';
 }
 
-// SOOP 프로필
-export interface SoopProfile {
-  soopId: string;
-  nickname: string;
-  profileImage: string;
-  isLive?: boolean;  // 선택적 속성으로 추가
-  stationUrl?: string;
-  lastUpdated?: string;
-  error?: string;
+// 역할 배정 관련 새로운 타입들
+export interface RoleAssignmentData {
+  userId: string;
+  role: Role;
 }
 
-// API 응답 타입들
-export interface ApiResponse<T> {
-  success: boolean;
-  message?: string;
-  error?: string;
-}
-
-export interface RoomCreateResponse extends ApiResponse<Room> {
-  room: Room;
-  userInfo: {
-    userId: string;
-    isHost: boolean;
+export interface RoleStats {
+  totalParticipants: number;
+  managerCount: number;
+  playerCount: number;
+  allReady: boolean;
+  canStartDraft: boolean;
+  requirements: {
+    minManagers: number;
+    minPlayers: number;
+    needsAllReady: boolean;
   };
 }
 
-export interface RoomJoinResponse extends ApiResponse<Room> {
-  room: Room;
-  userInfo: {
-    userId: string;
-    isHost: boolean;
-  };
+// Socket 이벤트 타입들
+export interface SocketEvents {
+  // 기존 이벤트들
+  'join-room': { roomCode: string; userData: User };
+  'leave-room': { roomCode: string; userId: string };
+  'send-chat-message': { roomCode: string; message: string; userId: string };
+  'ready-toggle': { roomCode: string; userId: string };
+  'update-room-settings': { roomCode: string; settings: any; userId: string };
+  
+  // 새로운 역할 배정 이벤트들
+  'assign-role': { roomCode: string; userId: string; role: Role };
+  'auto-assign-roles': { roomCode: string };
+  'start-draft': { roomCode: string };
 }
 
-export interface SoopProfileResponse extends ApiResponse<SoopProfile> {
-  profile: SoopProfile;
-}
-
-export interface SoopValidationResponse extends ApiResponse<SoopProfile> {
-  soopId: string;
-  isValid: boolean;
-  profile: SoopProfile | null;
-}
-
-export interface SoopMultipleResponse extends ApiResponse<SoopProfile[]> {
-  count: number;
-  profiles: SoopProfile[];
-  stats: {
-    requested: number;
-    successful: number;
-    failed: number;
-  };
-}
-
-// 폼 데이터 타입들
-export interface CreateRoomForm {
-  title: string;
-  hostSoopId: string;
-  hostPosition: 'ST' | 'WF' | 'CM' | 'CDM' | 'FB' | 'CB' | 'GK';
-  password?: string;
-  draftType: 'shuffle' | 'snake' | 'manual';
-}
-
-export interface JoinRoomForm {
-  roomCode: string;
-  soopId: string;
-  position: 'ST' | 'WF' | 'CM' | 'CDM' | 'FB' | 'CB' | 'GK';
-  password?: string;
-}
-
-export interface AddPlayerForm {
-  soopId: string;
-  position: 'ST' | 'WF' | 'CM' | 'CDM' | 'FB' | 'CB' | 'GK';
-}
-
-// Socket.io 이벤트 타입들
-export interface ClientToServerEvents {
-  'join-room': (data: { roomCode: string; userData: User }) => void;
-  'leave-room': (data: { roomCode: string; userId: string }) => void;
-  'send-chat-message': (data: { roomCode: string; message: string; userId: string }) => void;
-  'ready-toggle': (data: { roomCode: string; userId: string }) => void;
-  'update-room-settings': (data: { roomCode: string; settings: any; userId: string }) => void;
-}
-
-export interface ServerToClientEvents {
-  'room-updated': (room: Room) => void;
-  'participant-joined': (participant: User) => void;
-  'participant-left': (userId: string) => void;
-  'chat-message': (data: { userId: string; nickname: string; message: string; timestamp: string }) => void;
-  'error': (error: { message: string; code?: string }) => void;
-  'connected': (data: { message: string; socketId: string; timestamp: string }) => void;
-  'room-joined': (data: { room: Room; userInfo: { userId: string; isHost: boolean } }) => void;
-}
-
-// 컴포넌트 Props 타입들
-export interface RoomCardProps {
-  room: Room;
-  onJoin?: () => void;
-}
-
-export interface PlayerCardProps {
-  player: Player;
-  isSelected?: boolean;
-  isSelectable?: boolean;
-  onSelect?: () => void;
-}
-
-export interface UserAvatarProps {
-  user: User;
-  size?: 'sm' | 'md' | 'lg';
-  showStatus?: boolean;
-}
-
-// 앱 상태 타입
-export interface AppState {
-  user: User | null;
-  currentRoom: Room | null;
-  isConnected: boolean;
-  loading: boolean;
-  error: string | null;
+export interface SocketResponses {
+  // 기존 응답들
+  'room-updated': { room: Room; message?: string };
+  'participant-joined': { room: Room; participant: Participant };
+  'participant-left': { room: Room; participantId: string };
+  'chat-message': ChatMessage;
+  'error': { message: string };
+  
+  // 새로운 역할 배정 응답들
+  'role-assigned': { room: Room; assignedUser: RoleAssignmentData; message: string };
+  'roles-auto-assigned': { room: Room; message: string };
+  'draft-started': { room: Room; message: string };
 }

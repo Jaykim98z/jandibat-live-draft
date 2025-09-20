@@ -1,172 +1,179 @@
-// client/src/services/socketService.ts
+// client/src/services/socketService.ts (완전한 버전)
 import { io, Socket } from 'socket.io-client';
-import { Room, User } from '../types';
-
-interface ChatMessage {
-  id: string;
-  userId: string;
-  nickname: string;
-  message: string;
-  timestamp: string;
-  type: 'user' | 'system' | 'notification';
-}
-
-interface SocketEvents {
-  // 서버에서 클라이언트로
-  'connected': (data: { message: string; socketId: string; timestamp: string }) => void;
-  'room-joined': (data: { room: Room; userInfo: { userId: string; isHost: boolean } }) => void;
-  'room-updated': (data: { room: Room; message?: string }) => void;
-  'participant-left': (data: { userId: string; nickname: string; message: string }) => void;
-  'chat-message': (message: ChatMessage) => void;
-  'error': (error: { message: string; code?: string }) => void;
-}
-
-interface EmitEvents {
-  // 클라이언트에서 서버로
-  'join-room': (data: { roomCode: string; userData: User }) => void;
-  'leave-room': (data: { roomCode: string; userId: string }) => void;
-  'send-chat-message': (data: { roomCode: string; message: string; userId: string }) => void;
-  'ready-toggle': (data: { roomCode: string; userId: string }) => void;
-  'update-room-settings': (data: { roomCode: string; settings: any; userId: string }) => void;
-}
+import { User } from '../types';
 
 class SocketService {
   private socket: Socket | null = null;
-  private reconnectAttempts = 0;
-  private maxReconnectAttempts = 5;
-  private isConnecting = false;
-  
-  // 이벤트 리스너들
   private eventListeners: Map<string, Function[]> = new Map();
+  private reconnectAttempts: number = 0;
+  private maxReconnectAttempts: number = 5;
+  private reconnectDelay: number = 1000;
 
-  constructor() {
-    this.connect();
-  }
+  // Socket 연결
+  connect(): void {
+    const serverUrl = process.env.REACT_APP_SERVER_URL || 'http://localhost:3000';
+    
+    if (this.socket) {
+      console.log('🔌 Socket이 이미 연결되어 있습니다.');
+      return;
+    }
 
-  // 서버 연결
-  connect(): Promise<void> {
-    return new Promise((resolve, reject) => {
-      if (this.isConnecting || this.isConnected()) {
-        resolve();
-        return;
-      }
+    console.log('🔌 Socket 연결 중...', serverUrl);
 
-      this.isConnecting = true;
-      
-      const serverUrl = process.env.REACT_APP_SERVER_URL || 'http://localhost:3000';
-      
-      console.log('🔌 Socket 서버 연결 중...', serverUrl);
-      
-      this.socket = io(serverUrl, {
-        transports: ['websocket', 'polling'],
-        timeout: 10000,
-        forceNew: true
-      });
-
-      // 연결 성공
-      this.socket.on('connect', () => {
-        console.log('✅ Socket 서버 연결 성공:', this.socket?.id);
-        this.isConnecting = false;
-        this.reconnectAttempts = 0;
-        this.emit('connection-status', { connected: true, socketId: this.socket?.id });
-        resolve();
-      });
-
-      // 연결 실패
-      this.socket.on('connect_error', (error) => {
-        console.error('❌ Socket 연결 실패:', error);
-        this.isConnecting = false;
-        this.emit('connection-status', { connected: false, error: error.message });
-        
-        if (this.reconnectAttempts < this.maxReconnectAttempts) {
-          this.reconnectAttempts++;
-          console.log(`🔄 재연결 시도 ${this.reconnectAttempts}/${this.maxReconnectAttempts}`);
-          setTimeout(() => this.connect(), 2000 * this.reconnectAttempts);
-        } else {
-          reject(new Error('최대 재연결 시도 횟수를 초과했습니다.'));
-        }
-      });
-
-      // 연결 해제
-      this.socket.on('disconnect', (reason) => {
-        console.log('🔌 Socket 연결 해제:', reason);
-        this.emit('connection-status', { connected: false, reason });
-        
-        // 자동 재연결 (서버에서 끊은 경우가 아니라면)
-        if (reason === 'io server disconnect') {
-          // 서버에서 연결을 끊은 경우 수동으로 재연결
-          this.connect();
-        }
-      });
-
-      // 서버 이벤트 리스너 등록
-      this.registerServerEvents();
+    this.socket = io(serverUrl, {
+      transports: ['websocket', 'polling'],
+      timeout: 10000,
+      reconnection: true,
+      reconnectionAttempts: this.maxReconnectAttempts,
+      reconnectionDelay: this.reconnectDelay,
+      forceNew: true
     });
+
+    this.setupListeners();
   }
 
-  // 서버 이벤트 리스너 등록
-  private registerServerEvents() {
+  // Socket 연결 상태 확인
+  isConnected(): boolean {
+    return this.socket?.connected || false;
+  }
+
+  // Socket 이벤트 리스너 설정
+  private setupListeners(): void {
     if (!this.socket) return;
 
-    // 연결 확인
+    // 연결 관련 이벤트
+    this.socket.on('connect', () => {
+      console.log('✅ Socket 연결 성공:', this.socket?.id);
+      this.reconnectAttempts = 0;
+      this.emit('connected', { socketId: this.socket?.id });
+    });
+
     this.socket.on('connected', (data) => {
-      console.log('📡 서버 연결 확인:', data.message);
+      console.log('✅ 서버 연결 확인:', data);
       this.emit('connected', data);
     });
 
-    // 방 입장 성공
+    this.socket.on('disconnect', (reason) => {
+      console.log('🔌 Socket 연결 해제:', reason);
+      this.emit('disconnected', { reason });
+    });
+
+    this.socket.on('connect_error', (error) => {
+      console.error('❌ Socket 연결 오류:', error);
+      this.reconnectAttempts++;
+      
+      if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+        console.error('❌ 최대 재연결 시도 횟수 초과');
+        this.emit('error', { message: '서버 연결에 실패했습니다. 페이지를 새로고침해주세요.' });
+      }
+    });
+
+    this.socket.on('reconnect', (attemptNumber) => {
+      console.log('🔄 Socket 재연결 성공:', attemptNumber);
+      this.reconnectAttempts = 0;
+      this.emit('reconnected', { attemptNumber });
+    });
+
+    this.socket.on('reconnect_failed', () => {
+      console.error('❌ Socket 재연결 실패');
+      this.emit('error', { message: '서버 재연결에 실패했습니다.' });
+    });
+
+    // 방 관련 이벤트
     this.socket.on('room-joined', (data) => {
-      console.log('🏠 방 입장 성공:', data);
+      console.log('🏠 방 입장 완료:', data);
       this.emit('room-joined', data);
     });
 
-    // 방 정보 업데이트
     this.socket.on('room-updated', (data) => {
-      console.log('🔄 방 정보 업데이트:', data);
+      console.log('🔄 방 업데이트:', data);
       this.emit('room-updated', data);
     });
 
-    // 참가자 퇴장
+    this.socket.on('participant-joined', (data) => {
+      console.log('👥 참가자 입장:', data);
+      this.emit('participant-joined', data);
+    });
+
     this.socket.on('participant-left', (data) => {
       console.log('👋 참가자 퇴장:', data);
       this.emit('participant-left', data);
     });
 
-    // 채팅 메시지
-    this.socket.on('chat-message', (message) => {
-      console.log('💬 채팅 메시지:', message);
-      this.emit('chat-message', message);
+    // 채팅 관련 이벤트
+    this.socket.on('chat-message', (data) => {
+      console.log('💬 채팅 메시지:', data);
+      this.emit('chat-message', data);
     });
 
-    // 에러
-    this.socket.on('error', (error) => {
-      console.error('❌ Socket 에러:', error);
-      this.emit('error', error);
+    // 역할 배정 관련 이벤트
+    this.socket.on('role-assigned', (data) => {
+      console.log('👥 역할 배정 완료:', data);
+      this.emit('role-assigned', data);
     });
-  }
 
-  // 연결 상태 확인
-  isConnected(): boolean {
-    return this.socket?.connected || false;
+    this.socket.on('roles-auto-assigned', (data) => {
+      console.log('🎲 자동 역할 배정 완료:', data);
+      this.emit('roles-auto-assigned', data);
+    });
+
+    // 드래프트 관련 이벤트
+    this.socket.on('draft-started', (data) => {
+      console.log('🎯 드래프트 시작됨:', data);
+      this.emit('draft-started', data);
+    });
+
+    this.socket.on('turn-changed', (data) => {
+      console.log('🔄 턴 변경:', data);
+      this.emit('turn-changed', data);
+    });
+
+    this.socket.on('player-selected', (data) => {
+      console.log('⚽ 선수 선택됨:', data);
+      this.emit('player-selected', data);
+    });
+
+    this.socket.on('draft-completed', (data) => {
+      console.log('🏆 드래프트 완료:', data);
+      this.emit('draft-completed', data);
+    });
+
+    // 에러 이벤트
+    this.socket.on('error', (data) => {
+      console.log('❌ Socket 에러:', data);
+      this.emit('error', data);
+    });
   }
 
   // 방 입장
   joinRoom(roomCode: string, userData: User): void {
     if (!this.isConnected()) {
-      console.error('❌ Socket이 연결되지 않았습니다.');
       this.emit('error', { message: 'Socket이 연결되지 않았습니다.' });
       return;
     }
 
-    console.log('🏠 방 입장 시도:', { roomCode, userData });
-    this.socket?.emit('join-room', { roomCode, userData });
+    if (!roomCode || !userData) {
+      this.emit('error', { message: '방 코드와 사용자 데이터가 필요합니다.' });
+      return;
+    }
+
+    console.log('🏠 방 입장 요청:', { roomCode, userData });
+    this.socket?.emit('join-room', { roomCode: roomCode.toUpperCase(), userData });
   }
 
   // 방 퇴장
   leaveRoom(roomCode: string, userId: string): void {
-    if (!this.isConnected()) return;
+    if (!this.isConnected()) {
+      this.emit('error', { message: 'Socket이 연결되지 않았습니다.' });
+      return;
+    }
 
-    console.log('👋 방 퇴장:', { roomCode, userId });
+    if (!roomCode || !userId) {
+      this.emit('error', { message: '방 코드와 사용자 ID가 필요합니다.' });
+      return;
+    }
+
+    console.log('🚪 방 퇴장 요청:', { roomCode, userId });
     this.socket?.emit('leave-room', { roomCode, userId });
   }
 
@@ -174,6 +181,11 @@ class SocketService {
   sendChatMessage(roomCode: string, message: string, userId: string): void {
     if (!this.isConnected()) {
       this.emit('error', { message: 'Socket이 연결되지 않았습니다.' });
+      return;
+    }
+
+    if (!roomCode || !userId) {
+      this.emit('error', { message: '방 코드와 사용자 ID가 필요합니다.' });
       return;
     }
 
@@ -193,6 +205,11 @@ class SocketService {
       return;
     }
 
+    if (!roomCode || !userId) {
+      this.emit('error', { message: '방 코드와 사용자 ID가 필요합니다.' });
+      return;
+    }
+
     console.log('✅ 준비 상태 토글:', { roomCode, userId });
     this.socket?.emit('ready-toggle', { roomCode, userId });
   }
@@ -204,8 +221,98 @@ class SocketService {
       return;
     }
 
+    if (!roomCode || !userId) {
+      this.emit('error', { message: '방 코드와 사용자 ID가 필요합니다.' });
+      return;
+    }
+
     console.log('⚙️ 방 설정 업데이트:', { roomCode, settings, userId });
     this.socket?.emit('update-room-settings', { roomCode, settings, userId });
+  }
+
+  // 역할 배정 (방장만)
+  assignRole(roomCode: string, userId: string, role: 'manager' | 'player'): void {
+    if (!this.isConnected()) {
+      this.emit('error', { message: 'Socket이 연결되지 않았습니다.' });
+      return;
+    }
+
+    if (!roomCode || !userId || !role) {
+      this.emit('error', { message: '방 코드, 사용자 ID, 역할이 필요합니다.' });
+      return;
+    }
+
+    if (!['manager', 'player'].includes(role)) {
+      this.emit('error', { message: '올바른 역할을 선택해주세요.' });
+      return;
+    }
+
+    console.log('👥 역할 배정:', { roomCode, userId, role });
+    this.socket?.emit('assign-role', { roomCode, userId, role });
+  }
+
+  // 자동 역할 배정 (방장만)
+  autoAssignRoles(roomCode: string): void {
+    if (!this.isConnected()) {
+      this.emit('error', { message: 'Socket이 연결되지 않았습니다.' });
+      return;
+    }
+
+    if (!roomCode) {
+      this.emit('error', { message: '방 코드가 필요합니다.' });
+      return;
+    }
+
+    console.log('🎲 자동 역할 배정:', { roomCode });
+    this.socket?.emit('auto-assign-roles', { roomCode });
+  }
+
+  // 드래프트 시작 (방장만)
+  startDraft(roomCode: string): void {
+    if (!this.isConnected()) {
+      this.emit('error', { message: 'Socket이 연결되지 않았습니다.' });
+      return;
+    }
+
+    if (!roomCode) {
+      this.emit('error', { message: '방 코드가 필요합니다.' });
+      return;
+    }
+
+    console.log('🎯 드래프트 시작:', { roomCode });
+    this.socket?.emit('start-draft', { roomCode });
+  }
+
+  // 선수 선택 (감독만, 드래프트 중)
+  selectPlayer(roomCode: string, managerId: string, playerId: string): void {
+    if (!this.isConnected()) {
+      this.emit('error', { message: 'Socket이 연결되지 않았습니다.' });
+      return;
+    }
+
+    if (!roomCode || !managerId || !playerId) {
+      this.emit('error', { message: '방 코드, 감독 ID, 선수 ID가 필요합니다.' });
+      return;
+    }
+
+    console.log('⚽ 선수 선택:', { roomCode, managerId, playerId });
+    this.socket?.emit('select-player', { roomCode, managerId, playerId });
+  }
+
+  // 드래프트 턴 패스 (감독만)
+  passTurn(roomCode: string, managerId: string): void {
+    if (!this.isConnected()) {
+      this.emit('error', { message: 'Socket이 연결되지 않았습니다.' });
+      return;
+    }
+
+    if (!roomCode || !managerId) {
+      this.emit('error', { message: '방 코드와 감독 ID가 필요합니다.' });
+      return;
+    }
+
+    console.log('⏭️ 턴 패스:', { roomCode, managerId });
+    this.socket?.emit('pass-turn', { roomCode, managerId });
   }
 
   // 이벤트 리스너 등록
@@ -254,6 +361,16 @@ class SocketService {
       this.socket = null;
     }
     this.eventListeners.clear();
+    this.reconnectAttempts = 0;
+  }
+
+  // 강제 재연결
+  forceReconnect(): void {
+    console.log('🔄 Socket 강제 재연결');
+    this.disconnect();
+    setTimeout(() => {
+      this.connect();
+    }, 1000);
   }
 
   // 디버깅용 - 현재 상태 조회
@@ -262,8 +379,38 @@ class SocketService {
       connected: this.isConnected(),
       socketId: this.socket?.id,
       reconnectAttempts: this.reconnectAttempts,
-      activeListeners: Array.from(this.eventListeners.keys())
+      activeListeners: Array.from(this.eventListeners.keys()),
+      maxReconnectAttempts: this.maxReconnectAttempts,
+      serverUrl: process.env.REACT_APP_SERVER_URL || 'http://localhost:3000'
     };
+  }
+
+  // 디버깅용 - 이벤트 리스너 목록 조회
+  getEventListeners() {
+    const listeners: { [key: string]: number } = {};
+    this.eventListeners.forEach((value, key) => {
+      listeners[key] = value.length;
+    });
+    return listeners;
+  }
+
+  // 연결 테스트
+  testConnection(): Promise<boolean> {
+    return new Promise((resolve) => {
+      if (!this.isConnected()) {
+        resolve(false);
+        return;
+      }
+
+      const timeout = setTimeout(() => {
+        resolve(false);
+      }, 5000);
+
+      this.socket?.emit('ping', { timestamp: Date.now() }, (response: any) => {
+        clearTimeout(timeout);
+        resolve(!!response);
+      });
+    });
   }
 }
 

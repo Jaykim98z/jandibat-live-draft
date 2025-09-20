@@ -1,0 +1,367 @@
+/* client/src/components/room/RoleAssignmentSection.module.css */
+
+.roleAssignmentSection {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: var(--box-shadow);
+  border: 1px solid var(--gray-200);
+}
+
+/* 섹션 헤더 */
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid var(--gray-100);
+}
+
+.sectionHeader h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-color);
+  margin: 0;
+  display: flex;
+  align-items: center;
+}
+
+.headerActions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* 현재 상태 카드 */
+.statusCard {
+  background: var(--gray-50);
+  border: 1px solid var(--gray-200);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.statusGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.statusItem {
+  text-align: center;
+  padding: 1rem;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid var(--gray-200);
+}
+
+.statusNumber {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+
+.statusLabel {
+  font-size: 0.875rem;
+  color: var(--gray-600);
+  margin-bottom: 0.5rem;
+}
+
+.statusRequirement {
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+/* 드래프트 시작 섹션 */
+.startDraftSection {
+  text-align: center;
+  padding-top: 1rem;
+  border-top: 1px solid var(--gray-200);
+}
+
+.startDraftButton {
+  min-width: 200px;
+  margin-bottom: 0.75rem;
+}
+
+.requirementsList {
+  background: var(--red-50);
+  border: 1px solid var(--red-200);
+  border-radius: 8px;
+  padding: 1rem;
+  text-align: left;
+  max-width: 300px;
+  margin: 0 auto;
+}
+
+.requirementsList p {
+  font-weight: 600;
+  color: var(--red-700);
+  margin: 0 0 0.5rem 0;
+  font-size: 0.875rem;
+}
+
+.requirementsList ul {
+  margin: 0;
+  padding-left: 1.25rem;
+  color: var(--red-600);
+  font-size: 0.875rem;
+}
+
+.requirementsList li {
+  margin-bottom: 0.25rem;
+}
+
+/* 참가자 목록 */
+.participantsList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* 참가자 카드 */
+.participantCard {
+  border: 2px solid var(--gray-200);
+  border-radius: 12px;
+  background: white;
+  transition: var(--transition);
+  overflow: hidden;
+}
+
+.participantCard:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--box-shadow-hover);
+}
+
+.participantCard.currentUser {
+  box-shadow: 0 0 0 2px var(--primary-200);
+}
+
+/* 참가자 헤더 */
+.participantHeader {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.participantHeader:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+/* 아바타 */
+.participantAvatar {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+}
+
+.participantAvatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.hostBadge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 20px;
+  height: 20px;
+  background: #f59e0b;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 0.6875rem;
+  border: 2px solid white;
+}
+
+/* 참가자 정보 */
+.participantInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.participantName {
+  font-weight: 600;
+  color: var(--text-color);
+  font-size: 1rem;
+  margin-bottom: 0.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.youBadge {
+  background: var(--primary-600);
+  color: white;
+  font-size: 0.75rem;
+  padding: 0.125rem 0.375rem;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.participantDetails {
+  color: var(--gray-600);
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.positionBadge {
+  background: var(--gray-700);
+  color: white;
+  font-size: 0.75rem;
+  padding: 0.125rem 0.375rem;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+/* 역할 표시 */
+.roleDisplay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.5rem;
+  min-width: 60px;
+}
+
+.roleIcon {
+  font-size: 1.25rem;
+}
+
+.roleLabel {
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.expandIcon {
+  color: var(--gray-400);
+  font-size: 0.875rem;
+  padding: 0.5rem;
+}
+
+/* 역할 컨트롤 */
+.roleControls {
+  padding: 0 1rem 1rem 1rem;
+  border-top: 1px solid var(--gray-200);
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.roleOptions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.roleButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border: 2px solid var(--gray-300);
+  border-radius: 8px;
+  background: white;
+  color: var(--gray-700);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.roleButton:hover {
+  border-color: var(--primary-300);
+  background: var(--primary-50);
+  color: var(--primary-700);
+}
+
+.roleButton.active {
+  border-color: var(--primary-600);
+  background: var(--primary-600);
+  color: white;
+}
+
+.roleButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 안내 메시지 */
+.infoMessage {
+  background: var(--blue-50);
+  border: 1px solid var(--blue-200);
+  border-radius: 8px;
+  padding: 1rem;
+  color: var(--blue-700);
+  font-size: 0.875rem;
+  text-align: center;
+  margin-top: 1rem;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+  .roleAssignmentSection {
+    padding: 1rem;
+  }
+  
+  .sectionHeader {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+  
+  .statusGrid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  
+  .participantHeader {
+    padding: 0.75rem;
+  }
+  
+  .roleOptions {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+  
+  .startDraftButton {
+    min-width: auto;
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .participantCard {
+    font-size: 0.875rem;
+  }
+  
+  .participantAvatar {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .roleDisplay {
+    min-width: 50px;
+  }
+  
+  .roleIcon {
+    font-size: 1rem;
+  }
+  
+  .roleLabel {
+    font-size: 0.6875rem;
+  }
+}
