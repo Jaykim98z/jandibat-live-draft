@@ -1,28 +1,24 @@
-// server/socket/roomHandler.js (완전한 버전)
+// server/socket/roomHandler.js (방 퇴장 업데이트 수정)
 const { Room, ChatMessage } = require('../models');
 
 class RoomHandler {
   constructor(io) {
     this.io = io;
-    this.activeUsers = new Map(); // socketId -> { userId, roomCode, nickname }
+    this.activeUsers = new Map();
   }
 
   // Socket 연결 시 이벤트 등록
   handleConnection(socket) {
     console.log(`🔌 사용자 연결됨: ${socket.id}`);
 
-    // 기존 이벤트들
     socket.on('join-room', (data) => this.handleJoinRoom(socket, data));
     socket.on('leave-room', (data) => this.handleLeaveRoom(socket, data));
     socket.on('send-chat-message', (data) => this.handleChatMessage(socket, data));
     socket.on('ready-toggle', (data) => this.handleReadyToggle(socket, data));
     socket.on('update-room-settings', (data) => this.handleUpdateRoomSettings(socket, data));
-    
-    // 새로 추가된 역할 배정 이벤트들
     socket.on('assign-role', (data) => this.handleAssignRole(socket, data));
     socket.on('auto-assign-roles', (data) => this.handleAutoAssignRoles(socket, data));
     socket.on('start-draft', (data) => this.handleStartDraft(socket, data));
-    
     socket.on('disconnect', () => this.handleDisconnect(socket));
   }
 
@@ -36,7 +32,6 @@ class RoomHandler {
         return;
       }
 
-      // 방 존재 확인
       const room = await Room.findOne({ code: roomCode.toUpperCase() });
       if (!room) {
         socket.emit('error', { message: '존재하지 않는 방입니다.' });
@@ -80,7 +75,7 @@ class RoomHandler {
         }
       });
 
-      // 시스템 메시지는 한 번만 전송
+      // 시스템 메시지 전송
       await this.sendSystemMessage(roomCode, `${userData.nickname}님이 입장했습니다.`);
 
     } catch (error) {
@@ -89,7 +84,7 @@ class RoomHandler {
     }
   }
 
-  // 방 퇴장 처리
+  // 방 퇴장 처리 (수정됨)
   async handleLeaveRoom(socket, data) {
     try {
       const { roomCode, userId } = data;
@@ -99,24 +94,47 @@ class RoomHandler {
         return; // 이미 퇴장한 사용자
       }
 
-      console.log(`👋 방 퇴장: ${currentUser.nickname} (${currentUser.userId})`);
+      console.log(`👋 방 퇴장 시작: ${currentUser.nickname} (${currentUser.userId})`);
+
+      const finalRoomCode = roomCode || currentUser.roomCode;
+
+      // 데이터베이스에서 해당 참가자 제거
+      const room = await Room.findOne({ code: finalRoomCode });
+      if (room) {
+        // 참가자 배열에서 제거
+        room.participants = room.participants.filter(p => p.userId !== currentUser.userId);
+        
+        // 역할 기반 컬렉션도 업데이트
+        if (room.updateRoleBasedCollections) {
+          room.updateRoleBasedCollections();
+        }
+        
+        await room.save();
+        console.log(`📝 데이터베이스에서 참가자 제거: ${currentUser.nickname}`);
+
+        // 업데이트된 방 정보를 모든 사용자에게 전송
+        this.io.to(finalRoomCode).emit('room-updated', {
+          room: this.formatRoomData(room)
+        });
+
+        // 시스템 메시지 전송
+        await this.sendSystemMessage(finalRoomCode, `${currentUser.nickname}님이 퇴장했습니다.`);
+      }
 
       // Socket을 방에서 제거
-      socket.leave(roomCode || currentUser.roomCode);
+      socket.leave(finalRoomCode);
       
       // 활성 사용자 목록에서 제거
       this.activeUsers.delete(socket.id);
 
-      const finalRoomCode = roomCode || currentUser.roomCode;
-
-      // 방의 다른 사용자들에게 퇴장 알림
+      // 다른 참가자들에게 퇴장 알림
       socket.to(finalRoomCode).emit('participant-left', {
         participantId: currentUser.userId,
+        nickname: currentUser.nickname,
         message: `${currentUser.nickname}님이 퇴장했습니다.`
       });
 
-      // 시스템 메시지 전송
-      await this.sendSystemMessage(finalRoomCode, `${currentUser.nickname}님이 퇴장했습니다.`);
+      console.log(`✅ 방 퇴장 완료: ${currentUser.nickname}`);
 
       // 빈 방 확인 및 정리
       await this.checkEmptyRoom(finalRoomCode);
@@ -144,7 +162,6 @@ class RoomHandler {
 
       console.log('💬 채팅 전송:', { roomCode, message, userId });
 
-      // 채팅 메시지 저장
       const chatMessage = new ChatMessage({
         roomCode: roomCode,
         userId: userId,
@@ -155,7 +172,6 @@ class RoomHandler {
 
       await chatMessage.save();
 
-      // 방의 모든 사용자에게 메시지 전송
       this.io.to(roomCode).emit('chat-message', {
         id: chatMessage._id,
         userId: userId,
@@ -171,7 +187,7 @@ class RoomHandler {
     }
   }
 
-  // 준비 상태 토글
+  // 준비 상태 토글 (제거 예정이지만 일단 유지)
   async handleReadyToggle(socket, data) {
     try {
       const { roomCode, userId } = data;
@@ -182,14 +198,12 @@ class RoomHandler {
         return;
       }
 
-      // 방 정보 조회 및 참가자 상태 업데이트
       const room = await Room.findOne({ code: roomCode });
       if (!room) {
         socket.emit('error', { message: '방을 찾을 수 없습니다.' });
         return;
       }
 
-      // 해당 참가자의 준비 상태 토글
       const participant = room.participants.find(p => p.userId === userId);
       if (participant) {
         participant.isReady = !participant.isReady;
@@ -197,7 +211,6 @@ class RoomHandler {
 
         console.log(`✅ 준비 상태 변경: ${currentUser.nickname} → ${participant.isReady}`);
 
-        // 방의 모든 사용자에게 업데이트 전송 (메시지 없이)
         this.io.to(roomCode).emit('room-updated', {
           room: this.formatRoomData(room)
         });
@@ -226,13 +239,11 @@ class RoomHandler {
         return;
       }
 
-      // 방장 권한 확인
       if (room.host.userId !== userId) {
         socket.emit('error', { message: '방장만 설정을 변경할 수 있습니다.' });
         return;
       }
 
-      // 설정 업데이트
       if (settings.title) room.title = settings.title.trim();
       if (settings.draftType) room.settings.draftType = settings.draftType;
       if (settings.timePerTurn) room.settings.timePerTurn = settings.timePerTurn;
@@ -242,7 +253,6 @@ class RoomHandler {
 
       console.log(`⚙️ 방 설정 변경 [${roomCode}]: ${JSON.stringify(settings)}`);
 
-      // 방의 모든 사용자에게 업데이트 전송
       this.io.to(roomCode).emit('room-updated', {
         room: this.formatRoomData(room),
         message: '방 설정이 업데이트되었습니다.'
@@ -271,19 +281,16 @@ class RoomHandler {
         return;
       }
 
-      // 방장 권한 확인
       if (room.host.userId !== currentUser.userId) {
         socket.emit('error', { message: '방장만 역할을 배정할 수 있습니다.' });
         return;
       }
 
-      // 역할 유효성 검사
       if (!['manager', 'player'].includes(role)) {
         socket.emit('error', { message: '올바른 역할을 선택해주세요.' });
         return;
       }
 
-      // 역할 배정 실행
       const success = room.assignRole(userId, role);
       if (!success) {
         socket.emit('error', { message: '해당 참가자를 찾을 수 없습니다.' });
@@ -294,7 +301,6 @@ class RoomHandler {
 
       console.log(`👥 역할 배정: ${userId} → ${role} (방: ${roomCode})`);
 
-      // 방의 모든 사용자에게 업데이트 전송
       this.io.to(roomCode).emit('role-assigned', {
         room: this.formatRoomData(room),
         assignedUser: { userId, role },
@@ -324,25 +330,21 @@ class RoomHandler {
         return;
       }
 
-      // 방장 권한 확인
       if (room.host.userId !== currentUser.userId) {
         socket.emit('error', { message: '방장만 자동 역할 배정을 할 수 있습니다.' });
         return;
       }
 
-      // 자동 역할 배정 실행
       room.autoAssignRoles();
       await room.save();
 
       console.log(`🎲 자동 역할 배정 완료 (방: ${roomCode})`);
 
-      // 방의 모든 사용자에게 업데이트 전송
       this.io.to(roomCode).emit('roles-auto-assigned', {
         room: this.formatRoomData(room),
         message: '자동 역할 배정이 완료되었습니다!'
       });
 
-      // 시스템 메시지 전송
       await this.sendSystemMessage(roomCode, '🎲 자동 역할 배정이 완료되었습니다!');
 
     } catch (error) {
@@ -351,7 +353,7 @@ class RoomHandler {
     }
   }
 
-  // 드래프트 시작 처리 (방장만)
+  // 드래프트 시작 처리 (준비완료 조건 제거)
   async handleStartDraft(socket, data) {
     try {
       const { roomCode } = data;
@@ -368,16 +370,14 @@ class RoomHandler {
         return;
       }
 
-      // 방장 권한 확인
       if (room.host.userId !== currentUser.userId) {
         socket.emit('error', { message: '방장만 드래프트를 시작할 수 있습니다.' });
         return;
       }
 
-      // 드래프트 시작 조건 확인
+      // 드래프트 시작 조건 확인 (준비완료 조건 제거)
       const managerCount = room.participants.filter(p => p.role === 'manager').length;
       const playerCount = room.participants.filter(p => p.role === 'player').length;
-      const allReady = room.participants.every(p => p.isReady);
 
       if (managerCount < 2) {
         socket.emit('error', { 
@@ -393,24 +393,18 @@ class RoomHandler {
         return;
       }
 
-      if (!allReady) {
-        socket.emit('error', { message: '모든 참가자가 준비 상태여야 합니다.' });
-        return;
-      }
+      // 준비완료 조건 제거됨 - 방장이 언제든 시작 가능
 
-      // 드래프트 시작
       room.status = 'drafting';
       await room.save();
 
       console.log(`🎯 드래프트 시작 (방: ${roomCode}) - 감독: ${managerCount}명, 선수: ${playerCount}명`);
 
-      // 방의 모든 사용자에게 드래프트 시작 알림
       this.io.to(roomCode).emit('draft-started', {
         room: this.formatRoomData(room),
         message: '🎯 드래프트가 시작되었습니다!'
       });
 
-      // 시스템 메시지 전송
       await this.sendSystemMessage(roomCode, '🎯 드래프트가 시작되었습니다! 감독들은 순서대로 선수를 선택해주세요.');
 
     } catch (error) {
@@ -467,14 +461,12 @@ class RoomHandler {
   // 빈 방 확인 및 정리
   async checkEmptyRoom(roomCode) {
     try {
-      // 해당 방에 남은 사용자가 있는지 확인
       const roomUsers = Array.from(this.activeUsers.values())
         .filter(user => user.roomCode === roomCode);
 
       if (roomUsers.length === 0) {
         console.log(`🗑️ 빈 방 정리: ${roomCode}`);
         
-        // 방 상태를 abandoned로 변경 (즉시 삭제하지 않고 기록 보존)
         await Room.findOneAndUpdate(
           { code: roomCode },
           { status: 'abandoned', updatedAt: new Date() }
@@ -502,10 +494,19 @@ class RoomHandler {
       playerPool: room.playerPool || [],
       managerCount: room.participants.filter(p => p.role === 'manager').length,
       playerCount: room.participants.filter(p => p.role === 'player').length,
-      canStartDraft: room.canStartDraft,
+      canStartDraft: this.calculateCanStartDraft(room),
       createdAt: room.createdAt.toISOString(),
       updatedAt: room.updatedAt.toISOString()
     };
+  }
+
+  // 드래프트 시작 가능 조건 계산 (준비완료 조건 제거)
+  calculateCanStartDraft(room) {
+    const managerCount = room.participants.filter(p => p.role === 'manager').length;
+    const playerCount = room.participants.filter(p => p.role === 'player').length;
+    
+    return managerCount >= 2 && playerCount >= 1;
+    // 준비완료 조건 제거됨
   }
 
   // 활성 사용자 통계
